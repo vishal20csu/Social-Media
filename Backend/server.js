@@ -5,10 +5,11 @@ import authRoutes from "./routes/auth.routes.js"
 import userRoutes from "./routes/user.routes.js"
 import messageRoutes from "./routes/message.routes.js"
 import connectToMongoDb from "./db/connectToMongoDb.js";
+import {app, server} from '../Backend/socket/socket.js'
 
 
 
-const app= express();
+
 const PORT = process.env.PORT;
 
 
@@ -24,14 +25,14 @@ app.use("/api/message",messageRoutes)
 
 app.use("/api/users", userRoutes)
 
-app.use('/',(req,res)=>{
-    res.send('hello world');
-})
+// app.use('/',(req,res)=>{
+//     res.send('hello world');
+// })
 
 
+// console.log(`BHAI YE HAI ${PORT}`)   PORT UNDEFINED ISSUE    
 
-
-app.listen(3000,()=>{
+server.listen(8000,()=>{
     connectToMongoDb()
-    console.log(`Server connected on port ${PORT}`)
+    console.log(`Server connected on port ${8000}`)
 })

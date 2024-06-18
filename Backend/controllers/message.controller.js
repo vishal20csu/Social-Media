@@ -1,5 +1,7 @@
+
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js"
+import { getReceiverSocketId,io } from "../socket/socket.js";
 export const sendMessage= async (req,res)=>{
     try {
         
@@ -7,20 +9,20 @@ export const sendMessage= async (req,res)=>{
         const { id: receiverId } = req.params;
         const senderId= req.user._id;
 
-     
-
+        
         let conversation= await Conversation.findOne({
             participants:{$all : [senderId,receiverId]},
             
         })
-
+      
         if(!conversation){
             await Conversation.create({
                 participants:[senderId,receiverId]
             })
         }
       
-
+      
+        
         const newMessage= new Message({
             senderId:senderId,
             receiverId:receiverId,
@@ -35,7 +37,13 @@ export const sendMessage= async (req,res)=>{
         // await newMessage.save(); wait and then take 1 sec 
         // this will run in parallel
         await Promise.all([ conversation.save(),newMessage.save()])
-       
+
+        // socket.io functionality
+      
+         const receiverSocketId = getReceiverSocketId(receiverId)
+         if(receiverSocketId){
+            io.to(receiverSocketId).emit("newMessage",newMessage)
+         }
 
         res.status(201).json(newMessage);
    
@@ -49,19 +57,23 @@ export const sendMessage= async (req,res)=>{
 }
 
 export const getMessage= async (req,res)=>{
+ 
     try {
-        const {id:userToChatId} = req.params.id;
+        const {id:userToChatId} = req.params;
         const senderId= req.user._id;
-
+        
         const conversation = await Conversation.findOne({
-            participants:{$all: [senderId,userToChatId]},
-        }).populate("messages");
-   
-        console.log(conversation.messages)
+			participants: { $all: [senderId, userToChatId] },
+		}).populate("messages");
+        
+    
+        if (!conversation) return res.status(200).json([]);
 
-        res.status(200).json(conversation.messages);
+		const messages = conversation.messages;
+		res.status(200).json(messages);
         
     } catch (error) {
+        
         res.status(500).json({error:"Unable To Get Message"})
         
     }
